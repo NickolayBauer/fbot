@@ -1,4 +1,5 @@
 import telebot
+from telebot import types
 import psycopg2
 from psycopg2 import sql
 
@@ -11,14 +12,13 @@ curs = conn.cursor()
 
 bot = telebot.TeleBot("")
 
-
 ####################################находится ли id в определённом состоянии################################
 def check(conditions, my_id):
 	try:
 		curs.execute("SELECT cond FROM users WHERE user_id = %s;",(my_id,))	
 		if (curs.fetchall()[0][0]) == conditions:
 			return True
-	except IndexError:
+	except:
 		pass
 
 	return False
@@ -28,7 +28,7 @@ def if_NULL(my_id):
 		curs.execute("SELECT struc FROM users WHERE user_id = %s;",(my_id,))
 		if curs.fetchone()[0] == '':
 			return True
-	except TypeError:
+	except:
 		return True
 	return False
 
@@ -199,21 +199,20 @@ def update_6(message):
 @bot.message_handler(func = lambda message: True, commands = ['show_date'])
 def show1(message):
 	if if_NULL(message.chat.id) == False:
-		curs.execute("SELECT weight from users WHERE user_id = %s;",(message.chat.id,))
-		w = str(curs.fetchone())+' '
-		curs.execute("SELECT height from users WHERE user_id = %s;",(message.chat.id,))
-		h = str(curs.fetchone())+' '
-		curs.execute("SELECT age from users WHERE user_id = %s;",(message.chat.id,))
-		a = str(curs.fetchone())+' '
-		curs.execute("SELECT gender from users WHERE user_id = %s;",(message.chat.id,))
-		g = str(curs.fetchone())+' '
-		curs.execute("SELECT struc from users WHERE user_id = %s;",(message.chat.id,))
-		c = str(curs.fetchone())+' '
-		bot.send_message(message.chat.id,w + h + a + g + c)
+		curs.execute("SELECT weight, height, age, gender, struc from users WHERE user_id = %s;",(message.chat.id,))
+		date = curs.fetchone()
+
+		bot.send_message(message.chat.id,"Твои данные:\n\n"+"вес:"+str(date[0])+"\n"+"рост: "+str(date[1])+"\n"+"возраст: "+str(date[2])+"\n"+"пол: "+str(date[3])+"\n"+
+										 "телосложение: "+str(date[4])+"\n")
 	else:
 		bot.send_message(message.chat.id,"твои данных ещё не существует, используй /add_date или /update") 
 
 #############################################################################################################
+#добавить корректный ввод с помощью инлайн клавиатур
+#добавить проги
+#добавить поиск по прогам
+#Добавить бэкап данных в json
+#Добавить статистику прогресса из json-бэкапов
 
 if __name__ == "__main__":
     bot.polling(none_stop=True)
