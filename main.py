@@ -3,6 +3,7 @@ from telebot import types
 import psycopg2
 import os
 import json
+import keyB
 conn = psycopg2.connect(host='',
                         dbname='',
                         user='',
@@ -34,34 +35,30 @@ def if_NULL(my_id):
 
 ##########################################существует ли запись с таким id###################################
 def exist(my_id):
-	curs.execute("SELECT cond FROM users WHERE user_id = %s;",(my_id,))
-	if curs.fetchone() == None:
+	try:
+		curs.execute("SELECT cond FROM users WHERE user_id = %s;",(my_id,))
+		if curs.fetchone() == None:
+			return False
+		return True
+	except:
 		return False
-	return True
-
 #############################################приветствие####################################################
 @bot.message_handler(commands=["start", "старт"])
 def hello(message):
 	bot.send_message(message.chat.id, """Привет, человек. Я помогу тебе составить программу тренировок.
-		команды: \n/help\n/add_date\n/show_date\n/update""")
-@bot.message_handler(commands=["help"])
-def hello(message):
-	bot.send_message(message.chat.id, """Привет, человек. Я помогу тебе составить программу тренировок.
-		команды: \n
-				   /add_date  - добавить данные\n
-				   /show_date - показать данные\n
-				   /update    - обновить данные""")
+		\nИспользуй клавиатуру""",reply_markup=keyB.fkey())
+
 
 
 #####################################добавление данных в бд#################################################
-@bot.message_handler(func=lambda message:  True, commands=['add_date'])
+@bot.message_handler(func=lambda message:  True and message.text == 'Добавить данные', content_types = ['text'])
 def add_date1(message):
 	if if_NULL(message.chat.id) == True:
 		bot.send_message(message.chat.id,"""следующее твоё сообщение будет добавлено в базу данных\nВведи вес: """)
 		curs.execute("INSERT INTO users VALUES (%s,%s,%s,%s,%s,%s,%s);",([message.chat.id,'NULL','NULL','NULL','NULL','NULL','weight']))
 		conn.commit()
 	else:
-		bot.send_message(message.chat.id,"твои данные уже существуют, используй /update")
+		bot.send_message(message.chat.id,"твои данные уже существуют, просто обнови их")
 
 
 @bot.message_handler(func=lambda message: check('weight',message.chat.id), content_types = ['text'])
@@ -124,53 +121,56 @@ def add_date6(message):
 		bot.send_message(message.chat.id,"""Введи данные правильно \n- Эктоморф, Мезоморф или Эндоморф""")
 
 # #################################обновление даннных в бд###################################################
-@bot.message_handler(func=lambda message:  True , commands=['update'])
+@bot.message_handler(func=lambda message:  True and message.text == 'Обновить мои данные', content_types = ['text'])
 def update1(message):
 	if exist(message.chat.id) == True:
 
 		keyboard = types.InlineKeyboardMarkup()
-		callback_button1 = types.InlineKeyboardButton(text="вес", callback_data="weight")
-		callback_button2 = types.InlineKeyboardButton(text="рост", callback_data="height")
-		callback_button3 = types.InlineKeyboardButton(text="возраст", callback_data="age")
-		callback_button4 = types.InlineKeyboardButton(text="телосложение", callback_data="struc")
-		callback_button5 = types.InlineKeyboardButton(text="пол ?! (серьёзно?) ", callback_data="gender")
-		callback_button6 = types.InlineKeyboardButton(text="ничего", callback_data="zero")
-		keyboard.add(callback_button1,callback_button2,callback_button3,callback_button4,callback_button5,callback_button6)
+		row = []
+		row.append(types.InlineKeyboardButton(text="вес", callback_data="weight"))
+		row.append(types.InlineKeyboardButton(text="рост", callback_data="height"))
+		row.append(types.InlineKeyboardButton(text="возраст", callback_data="age"))
+		row.append(types.InlineKeyboardButton(text="стаж",callback_data = "staj"))
+		row.append(types.InlineKeyboardButton(text="пол", callback_data="gender"))
+		row.append(types.InlineKeyboardButton(text="ничего", callback_data="zero"))
+		row.append(types.InlineKeyboardButton(text="телосложение", callback_data="struc"))
+
+		keyboard.add(*row)
 		bot.send_message(message.chat.id, "что будем обновлять?", reply_markup=keyboard)
 
-		curs.execute("UPDATE users SET cond = %s WHERE user_id = %s;",('update', message.chat.id))
-		conn.commit()
+		
 	else:
-		bot.send_message(message.chat.id,"""тебе нечего обновлять, добавь данные: /add_date""")
+		bot.send_message(message.chat.id,"""тебе нечего обновлять, добавь данные""")
 
 
 @bot.callback_query_handler(func=lambda call: True)
 def callback_inline(call):
-    if call.message:
-        if call.data == "weight":
-        	bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id, text="""введи новый вес""")
-        	curs.execute("UPDATE users SET cond = %s WHERE user_id = %s;",('update_w', call.message.chat.id))
-        	conn.commit()
-        elif call.data == "height":
-        	bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id, text="""введи новый рост""")
-        	curs.execute("UPDATE users SET cond = %s WHERE user_id = %s;",('update_h', call.message.chat.id))
-        	conn.commit()
-        elif call.data == "age":
-        	bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id, text="""введи новый возраст""")
-        	curs.execute("UPDATE users SET cond = %s WHERE user_id = %s;",('update_a', call.message.chat.id))
-        	conn.commit()
-        elif call.data == "struc":
-        	bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id, text="""введи новое телосложение""")
-        	curs.execute("UPDATE users SET cond = %s WHERE user_id = %s;",('update_s', call.message.chat.id))
-        	conn.commit()
-        elif call.data == "gender":
-        	bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id, text="""введи новый пол (ты просто ошибся, когда заполнял данные, да?)""")
-        	curs.execute("UPDATE users SET cond = %s WHERE user_id = %s;",('update_g', call.message.chat.id))
-        	conn.commit()
-        elif call.data == "zero":
-        	bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id, text="""Окей, что-то ещё?""")
-        	curs.execute("UPDATE users SET cond = %s WHERE user_id = %s;",('zero', call.message.chat.id))
-        	conn.commit()	
+	
+	if call.message:
+		if call.data == "weight":
+			bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id, text="""введи новый вес""")
+			curs.execute("UPDATE users SET cond = %s WHERE user_id = %s;",('update_w', call.message.chat.id))
+			conn.commit()
+		elif call.data == "height":
+			bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id, text="""введи новый рост""")
+			curs.execute("UPDATE users SET cond = %s WHERE user_id = %s;",('update_h', call.message.chat.id))
+			conn.commit()
+		elif call.data == "age":
+			bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id, text="""введи новый возраст""")
+			curs.execute("UPDATE users SET cond = %s WHERE user_id = %s;",('update_a', call.message.chat.id))
+			conn.commit()
+		elif call.data == "struc":
+			bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id, text="""введи новое телосложение""")
+			curs.execute("UPDATE users SET cond = %s WHERE user_id = %s;",('update_s', call.message.chat.id))
+			conn.commit()
+		elif call.data == "gender":
+			bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id, text="""введи новый пол (ты просто ошибся, когда заполнял данные, да?)""")
+			curs.execute("UPDATE users SET cond = %s WHERE user_id = %s;",('update_g', call.message.chat.id))
+			conn.commit()
+		elif call.data == "zero":
+			bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id, text="""Окей, что-то ещё?""")
+			curs.execute("UPDATE users SET cond = %s WHERE user_id = %s;",('zero', call.message.chat.id))
+			conn.commit()	
 
 @bot.message_handler(func=lambda message: check('update_w',message.chat.id), content_types = ['text'])
 def update_2(message):
@@ -228,7 +228,7 @@ def update_6(message):
 
 
 
-@bot.message_handler(func = lambda message: True, commands = ['show_date'])
+@bot.message_handler(func = lambda message: True and message.text == 'Показать мои данные', content_types = ['text'])
 def show1(message):
 	if if_NULL(message.chat.id) == False:
 		curs.execute("SELECT weight, height, age, gender, struc from users WHERE user_id = %s;",(message.chat.id,))
@@ -236,11 +236,11 @@ def show1(message):
 		bot.send_message(message.chat.id,"Твои данные:\n\n"+"вес: "+str(date[0])+"\n"+"рост: "+str(date[1])+"\n"+"возраст: "+str(date[2])+"\n"+"пол: "+str(date[3])+"\n"+
 										 "телосложение: "+str(date[4])+"\n")
 	else:
-		bot.send_message(message.chat.id,"твои данных ещё не существует, используй /add_date или /update") 
+		bot.send_message(message.chat.id,"твои данных ещё не существует, используй /add или /update") 
 
 
 
-@bot.message_handler(func=lambda message:  check('zero',message.chat.id), commands=['find_program'])
+@bot.message_handler(func=lambda message:  check('zero',message.chat.id) and message.text == 'Найти программу', content_types = ['text'])
 def find_program(message):
 	curs.execute("SELECT gender, struc from users WHERE user_id = %s;",(message.chat.id,))
 	date = curs.fetchone()
@@ -257,12 +257,6 @@ def find_program(message):
 	else:
 		bot.send_message(message.chat.id,"Пока для таких параметров нет программы, попробуй использовать что-то ещё")
 
-	"""keyboard = types.InlineKeyboardMarkup()
-		callback_button1 = types.InlineKeyboardButton(text="следующая", callback_data="next")
-		callback_button2 = types.InlineKeyboardButton(text="предыдущая", callback_data="undo")
-		keyboard.add(callback_button1,callback_button2)
-		bot.send_message(message.chat.id, list_program, reply_markup=keyboard)
-	"""
 
 #############################################################################################################
 #Добавить статистику прогресса из json-бэкапов
