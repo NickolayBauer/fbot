@@ -46,10 +46,19 @@ def exist(my_id):
 @bot.message_handler(commands=["start", "старт"])
 def hello(message):
 	bot.send_message(message.chat.id, """Привет, человек. Я помогу тебе составить программу тренировок.
-		\nИспользуй клавиатуру""",reply_markup=keyB.fkey())
+		\nИспользуй клавиатуру\nЕё можно вызвать, воспользовавшись данной икнонкой.""",reply_markup=keyB.fkey())
+	bot.send_photo(message.chat.id,'AgADAgADqqoxG70o6UktvVCAeVodcOjAtw4ABMgBwsHs5MEc6bIAAgI')
 
+# @bot.message_handler(commands=['test'])
+# def find_file_ids(message):
+#     for file in os.listdir('img/'):
+#         if file.split('.')[-1] == 'jpg':
+#             f = open('img/'+file, 'rb')
+#             msg = bot.send_photo(message.chat.id, f, None)
+#             bot.send_message(message.chat.id, msg.photo, reply_to_message_id=msg.message_id)
+#         time.sleep(3)
 
-
+   
 #####################################добавление данных в бд#################################################
 @bot.message_handler(func=lambda message:  True and message.text == 'Добавить данные', content_types = ['text'])
 def add_date1(message):
@@ -105,6 +114,7 @@ def add_date5(message):
 		curs.execute("UPDATE users SET cond = %s WHERE user_id = %s;",('struc', message.chat.id))
 		conn.commit()
 		bot.send_message(message.chat.id,"""окей теперь укажи телосложение - Эктоморф, Мезоморф или Эндоморф""")
+		bot.send_photo(message.chat.id, 'AgADAgADIqkxG3uG6UlV_1oyJvtIUUhPqw4ABOPJmzjzR-ZIFzUDAAEC')
 	else:
 		bot.send_message(message.chat.id,"""Введи данные правильно \n- М или Ж  """)
 
@@ -116,7 +126,7 @@ def add_date6(message):
 		conn.commit()
 		curs.execute("UPDATE users SET cond = %s WHERE user_id = %s;",('zero', message.chat.id))
 		conn.commit()
-		bot.send_message(message.chat.id,"""Готово, все твои данные созданы, ты можешь посмотреть их командой /show_date """)
+		bot.send_message(message.chat.id,"""Готово, все твои данные созданы, ты можешь посмотреть их в основном меню""")
 	else:
 		bot.send_message(message.chat.id,"""Введи данные правильно \n- Эктоморф, Мезоморф или Эндоморф""")
 
@@ -130,7 +140,6 @@ def update1(message):
 		row.append(types.InlineKeyboardButton(text="вес", callback_data="weight"))
 		row.append(types.InlineKeyboardButton(text="рост", callback_data="height"))
 		row.append(types.InlineKeyboardButton(text="возраст", callback_data="age"))
-		row.append(types.InlineKeyboardButton(text="стаж",callback_data = "staj"))
 		row.append(types.InlineKeyboardButton(text="пол", callback_data="gender"))
 		row.append(types.InlineKeyboardButton(text="ничего", callback_data="zero"))
 		row.append(types.InlineKeyboardButton(text="телосложение", callback_data="struc"))
@@ -145,7 +154,6 @@ def update1(message):
 
 @bot.callback_query_handler(func=lambda call: True)
 def callback_inline(call):
-	
 	if call.message:
 		if call.data == "weight":
 			bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id, text="""введи новый вес""")
@@ -161,6 +169,7 @@ def callback_inline(call):
 			conn.commit()
 		elif call.data == "struc":
 			bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id, text="""введи новое телосложение""")
+			bot.send_photo(call.message.chat.id, 'AgADAgADIqkxG3uG6UlV_1oyJvtIUUhPqw4ABOPJmzjzR-ZIFzUDAAEC', None)
 			curs.execute("UPDATE users SET cond = %s WHERE user_id = %s;",('update_s', call.message.chat.id))
 			conn.commit()
 		elif call.data == "gender":
@@ -257,6 +266,15 @@ def find_program(message):
 	else:
 		bot.send_message(message.chat.id,"Пока для таких параметров нет программы, попробуй использовать что-то ещё")
 
+
+@bot.message_handler(func=lambda message:  check('zero',message.chat.id) and message.text == 'Как пользоваться ботом?', content_types = ['text'])
+def hepl(message):
+	keyboard = types.InlineKeyboardMarkup()
+	row = []
+	row.append(types.InlineKeyboardButton(text="поодержать в QIWI", url = 'https://qiwi.me/3282c84e-7c67-4f14-8037-9d770ff3d56b'))
+	keyboard.add(*row)
+	bot.send_message(message.chat.id, """Добавь в бота данные о себе и найди программу тренировок!\nДля связи с ботом ты можешь использовать клавиатуру, которая вызывается соответсвующей икнокой (рядом со скрепочкой над клавиатурой) некоторые разделы бота до сих пор находится в разработке. \n\nЕсли у тебя есть идеи или пожелания - пиши: @Nickolas_510\n\n
+		Если ты хочешь поодержать проект деньгами""",reply_markup=keyboard)
 
 #############################################################################################################
 #Добавить статистику прогресса из json-бэкапов
